@@ -15,6 +15,10 @@
     {
       "plan": "Salir a cenar a un sitio nuevo 🍔",
       "hecho": true
+    },
+    {
+      "plan": "Prueba de nota presenta error",
+      "hecho": false
     }
   ],
   "encuestas": [],
