@@ -1,4 +1,4 @@
- import streamlit as st
+import streamlit as st
 import json
 import base64
 import requests
@@ -16,7 +16,7 @@ REPO_OWNER = "lacruzedward4-max"
 REPO_NAME = "nuestro-espaci"
 DATA_FILE = "data.json"
 
-# 🔑 CLAVE DE ADMINISTRADOR (Modifica "1234" si deseas otra clave para Edward)
+# 🔑 CLAVE DE ADMINISTRADOR
 CLAVE_ADMIN_EDWARD = "1234"
 
 # 🖼️ Nombre exacto de la foto de fondo
@@ -147,7 +147,7 @@ if "status" not in st.session_state.app_data:
 if "usuario_activo" not in st.session_state:
     st.session_state.usuario_activo = None
 
-# Estilos CSS con Animación de Corazón Latiendo y Libro Romántico
+# Estilos CSS
 st.markdown(f"""
     <style>
     /* Fondo */
@@ -277,9 +277,7 @@ st.markdown(f"""
     </style>
 """, unsafe_allow_html=True)
 
-# -------------------------------------------------------------
 # 📖 PANTALLA DE ENTRADA / PORTADA DEL LIBRO DE NUESTRA HISTORIA
-# -------------------------------------------------------------
 if st.session_state.usuario_activo is None:
     st.markdown("<h1 style='text-align: center;'>📖 Nuestro Libro de la Historia 💖</h1>", unsafe_allow_html=True)
     st.markdown("<div class='corazon-animado'>💖</div>", unsafe_allow_html=True)
@@ -299,13 +297,11 @@ if st.session_state.usuario_activo is None:
             st.balloons()
             st.rerun()
 
-# -------------------------------------------------------------
-# 💖 APLICACIÓN PRINCIPAL (UNA VEZ ABIERTO EL LIBRO)
-# -------------------------------------------------------------
+# 💖 APLICACIÓN PRINCIPAL (LIBRO ABIERTO)
 else:
     usuario = st.session_state.usuario_activo
 
-    # Barra Superior de Bienvenida y Cambiar Usuario
+    # Barra Superior de Bienvenida
     c1, c2 = st.columns([0.65, 0.35])
     with c1:
         st.markdown(f"<b>Hola, {usuario}</b>", unsafe_allow_html=True)
