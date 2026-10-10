@@ -23,66 +23,96 @@ GITHUB_TOKEN = st.secrets.get("GITHUB_TOKEN", None)
 
 # Funciones de GitHub
 def get_github_file(filepath, solo_sha=False):
-    if not GITHUB_TOKEN: return None, None
-    headers = {"Authorization": f"token {GITHUB_TOKEN}", "Accept": "application/vnd.github.v3+json"}
+    if not GITHUB_TOKEN:
+        return None, None
+    headers = {
+        "Authorization": f"token {GITHUB_TOKEN}",
+        "Accept": "application/vnd.github.v3+json"
+    }
     url = f"https://api.github.com/repos/{REPO_OWNER}/{REPO_NAME}/contents/{filepath}"
     try:
         res = requests.get(url, headers=headers, timeout=5)
         if res.status_code == 200:
             content = res.json()
-            if solo_sha: return None, content["sha"]
+            if solo_sha:
+                return None, content["sha"]
             decoded = base64.b64decode(content["content"]).decode("utf-8")
             return json.loads(decoded), content["sha"]
-    except: pass
+    except Exception:
+        pass
     return None, None
 
 def save_github_file(filepath, data_dict, commit_message="Update data"):
-    if not GITHUB_TOKEN: return False, "No token"
-    headers = {"Authorization": f"token {GITHUB_TOKEN}", "Accept": "application/vnd.github.v3+json"}
+    if not GITHUB_TOKEN:
+        return False, "No token"
+    headers = {
+        "Authorization": f"token {GITHUB_TOKEN}",
+        "Accept": "application/vnd.github.v3+json"
+    }
     url = f"https://api.github.com/repos/{REPO_OWNER}/{REPO_NAME}/contents/{filepath}"
     _, current_sha = get_github_file(filepath)
     encoded = base64.b64encode(json.dumps(data_dict, ensure_ascii=False, indent=2).encode("utf-8")).decode("utf-8")
-    payload = {"message": commit_message, "content": encoded}
-    if current_sha: payload["sha"] = current_sha
+    payload = {
+        "message": commit_message,
+        "content": encoded
+    }
+    if current_sha:
+        payload["sha"] = current_sha
     try:
         res = requests.put(url, headers=headers, json=payload, timeout=10)
         if res.status_code in [200, 201]:
             st.session_state.last_sha = res.json()["content"]["sha"]
             return True, "Guardado con éxito"
-    except: pass
+    except Exception:
+        pass
     return False, "Error al guardar"
 
 def save_github_image(filename, image_bytes):
-    if not GITHUB_TOKEN: return None, "No token"
-    headers = {"Authorization": f"token {GITHUB_TOKEN}", "Accept": "application/vnd.github.v3+json"}
+    if not GITHUB_TOKEN:
+        return None, "No token"
+    headers = {
+        "Authorization": f"token {GITHUB_TOKEN}",
+        "Accept": "application/vnd.github.v3+json"
+    }
     filepath = f"uploads/{filename}"
     url = f"https://api.github.com/repos/{REPO_OWNER}/{REPO_NAME}/contents/{filepath}"
     _, current_sha = get_github_file(filepath)
     encoded = base64.b64encode(image_bytes).decode("utf-8")
-    payload = {"message": f"Upload image {filename}", "content": encoded}
-    if current_sha: payload["sha"] = current_sha
+    payload = {
+        "message": f"Upload image {filename}",
+        "content": encoded
+    }
+    if current_sha:
+        payload["sha"] = current_sha
     try:
         res = requests.put(url, headers=headers, json=payload, timeout=10)
         if res.status_code in [200, 201]:
-            return f"https://raw.githubusercontent.com/{REPO_OWNER}/{REPO_NAME}/main/{filepath}", "Éxito"
-    except: pass
+            raw_url = f"https://raw.githubusercontent.com/{REPO_OWNER}/{REPO_NAME}/main/{filepath}"
+            return raw_url, "Éxito"
+    except Exception:
+        pass
     return None, "Error"
 
 def delete_github_image_file(image_url):
-    if not GITHUB_TOKEN or not image_url: return False
+    if not GITHUB_TOKEN or not image_url:
+        return False
     try:
         if "/main/" in image_url:
             filepath = image_url.split("/main/")[-1]
             _, sha = get_github_file(filepath)
             if sha:
-                headers = {"Authorization": f"token {GITHUB_TOKEN}", "Accept": "application/vnd.github.v3+json"}
+                headers = {
+                    "Authorization": f"token {GITHUB_TOKEN}",
+                    "Accept": "application/vnd.github.v3+json"
+                }
                 url = f"https://api.github.com/repos/{REPO_OWNER}/{REPO_NAME}/contents/{filepath}"
                 requests.delete(url, headers=headers, json={"message": f"Delete {filepath}", "sha": sha}, timeout=10)
                 return True
-    except: pass
+    except Exception:
+        pass
     return False
 
-# Carga inicial y control de estado (SHA)
+# Carga inicial y control de estado
 if "last_sha" not in st.session_state:
     st.session_state.last_sha = None
 
@@ -97,13 +127,16 @@ if "app_data" not in st.session_state:
 if "status" not in st.session_state.app_data:
     st.session_state.app_data["status"] = {}
 
-# Sincronización en la URL
+# Sincronización de usuario mediante URL
 query_user = st.query_params.get("user", None)
-if query_user == "yesenia": st.session_state.usuario_activo = "Yesenia Alejandra 💕"
-elif query_user == "edward": st.session_state.usuario_activo = "Edward ❤️"
-elif "usuario_activo" not in st.session_state: st.session_state.usuario_activo = None
+if query_user == "yesenia":
+    st.session_state.usuario_activo = "Yesenia Alejandra 💕"
+elif query_user == "edward":
+    st.session_state.usuario_activo = "Edward ❤️"
+elif "usuario_activo" not in st.session_state:
+    st.session_state.usuario_activo = None
 
-# ESTILOS CSS
+# Estilos CSS
 st.markdown(f"""
     <style>
     [data-testid="stStatusWidget"], .stSpinner {{ display: none !important; visibility: hidden !important; }}
@@ -153,7 +186,7 @@ st.markdown(f"""
     </style>
 """, unsafe_allow_html=True)
 
-# 📖 MENU INICIAL
+# PORTADA
 if st.session_state.usuario_activo is None:
     st.markdown("<h1 style='text-align: center;'>📖 Nuestro Libro 💖</h1>", unsafe_allow_html=True)
     st.markdown("<div class='corazon-animado'>💖</div>", unsafe_allow_html=True)
@@ -174,7 +207,7 @@ if st.session_state.usuario_activo is None:
             save_github_file(DATA_FILE, st.session_state.app_data, "Login Edward")
             st.rerun()
 
-# 💖 APLICACIÓN PRINCIPAL
+# CONTENIDO PRINCIPAL
 else:
     usuario = st.session_state.usuario_activo
 
@@ -197,18 +230,20 @@ else:
             st.query_params.clear()
             st.rerun()
 
-    # PANEL ADMIN PRIMERO (Para habilitar opciones exclusivas)
+    # Panel Admin primero
     es_admin = False
     if usuario == "Edward ❤️":
         with st.expander("🛠️ Admin"):
-            if st.text_input("Clave:", type="password") == CLAVE_ADMIN_EDWARD: 
+            pwd_in = st.text_input("Clave:", type="password")
+            if pwd_in == CLAVE_ADMIN_EDWARD:
                 es_admin = True
 
-    # ESTADOS "EN LÍNEA" (SOLO VISIBLE SI ES ADMIN)
+    # Estado "En línea" visible SOLO si es Admin
     if es_admin:
         def obtener_badge_estado(nombre_user):
             last_str = st.session_state.app_data["status"].get(nombre_user, "")
-            if not last_str: return "⚪ Desconectado/a"
+            if not last_str:
+                return "⚪ Desconectado/a"
             try:
                 dt = datetime.strptime(last_str, "%Y-%m-%d %H:%M:%S")
                 diferencia = (datetime.now() - dt).total_seconds()
@@ -216,7 +251,8 @@ else:
                     return "🟢 Reciente"
                 else:
                     return f"⚪ Última vez: {dt.strftime('%d/%m %I:%M %p')}"
-            except: return "⚪ Desconectado/a"
+            except Exception:
+                return "⚪ Desconectado/a"
 
         st.markdown(f"""
             <div class='whatsapp-status-box'>
@@ -229,7 +265,8 @@ else:
 
     # TAB 1: PLANES
     with tab1:
-        cambio_planes, idx_borrar = False, None
+        cambio_planes = False
+        idx_borrar = None
         for idx, item in enumerate(st.session_state.app_data["planes"]):
             col1, col2 = st.columns([0.8, 0.2])
             with col1:
@@ -238,7 +275,8 @@ else:
                     st.session_state.app_data["planes"][idx]["hecho"] = estado
                     cambio_planes = True
             with col2:
-                if es_admin and st.button("🗑️", key=f"del_plan_{idx}"): idx_borrar = idx
+                if es_admin and st.button("🗑️", key=f"del_plan_{idx}"):
+                    idx_borrar = idx
                         
         if idx_borrar is not None:
             st.session_state.app_data["planes"].pop(idx_borrar)
@@ -251,7 +289,12 @@ else:
         st.divider()
         nuevo_plan = st.text_input("➕ Agregar plan:")
         if st.button("Guardar Plan 📝") and nuevo_plan.strip():
-            st.session_state.app_data["planes"].append({"plan": nuevo_plan.strip(), "hecho": False, "fecha": datetime.now().strftime("%d/%m %I:%M %p"), "autor": usuario})
+            st.session_state.app_data["planes"].append({
+                "plan": nuevo_plan.strip(),
+                "hecho": False,
+                "fecha": datetime.now().strftime("%d/%m %I:%M %p"),
+                "autor": usuario
+            })
             save_github_file(DATA_FILE, st.session_state.app_data, "Add plan")
             st.rerun()
 
@@ -263,8 +306,13 @@ else:
             p3 = st.text_area("3. Mensajito secreto ❤️:")
             if st.button("Enviar Respuestas 💌") and (p1.strip() or p2.strip() or p3.strip()):
                 st.session_state.app_data["encuestas"].insert(0, {
-                    "id": len(st.session_state.app_data["encuestas"]) + 1, "autor": usuario,
-                    "fecha": datetime.now().strftime("%d/%m %I:%M %p"), "p1": p1, "p2": p2, "p3": p3, "comentarios": []
+                    "id": len(st.session_state.app_data["encuestas"]) + 1,
+                    "autor": usuario,
+                    "fecha": datetime.now().strftime("%d/%m %I:%M %p"),
+                    "p1": p1,
+                    "p2": p2,
+                    "p3": p3,
+                    "comentarios": []
                 })
                 save_github_file(DATA_FILE, st.session_state.app_data, "New survey")
                 st.rerun()
@@ -277,11 +325,12 @@ else:
             st.write(f"**2. Antojo:** {enc['p2']}")
             st.write(f"**3. Mensaje:** {enc['p3']}")
             
-            if es_admin and st.button(f"🗑️ Eliminar Encuesta", key=f"del_enc_{enc_idx}"): idx_borrar_enc = enc_idx
+            if es_admin and st.button("🗑️ Eliminar Encuesta", key=f"del_enc_{enc_idx}"):
+                idx_borrar_enc = enc_idx
 
             for c_idx, c in enumerate(enc["comentarios"]):
                 st.write(f"- *{c['autor']}* ({c.get('fecha','')}): {c['texto']}")
-                if es_admin and st.button(f"🗑️", key=f"del_c_{enc_idx}_{c_idx}"):
+                if es_admin and st.button("🗑️", key=f"del_c_{enc_idx}_{c_idx}"):
                     enc["comentarios"].pop(c_idx)
                     save_github_file(DATA_FILE, st.session_state.app_data, "Del comment")
                     st.rerun()
@@ -289,7 +338,11 @@ else:
             n_com = st.text_input(f"Comentar a {enc['autor']}:", key=f"comm_{enc['id']}")
             if st.button("Comentar 💬", key=f"btn_c_{enc['id']}") and n_com.strip():
                 st.session_state.app_data["status"][usuario] = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-                enc["comentarios"].append({"autor": usuario, "texto": n_com.strip(), "fecha": datetime.now().strftime("%d/%m %I:%M %p")})
+                enc["comentarios"].append({
+                    "autor": usuario,
+                    "texto": n_com.strip(),
+                    "fecha": datetime.now().strftime("%d/%m %I:%M %p")
+                })
                 save_github_file(DATA_FILE, st.session_state.app_data, "Add comment")
                 st.rerun()
             st.divider()
@@ -306,20 +359,21 @@ else:
         if st.button("Guardar Foto 🖼️") and foto_archivo:
             url, _ = save_github_image(f"{datetime.now().strftime('%Y%m%d_%H%M%S')}_{foto_archivo.name}", foto_archivo.getvalue())
             if url:
-                st.session_state.app_data["fotos"].insert(0, {"url": url, "caption": desc, "autor": usuario, "fecha": datetime.now().strftime("%d/%m %I:%M %p")})
+                st.session_state.app_data["fotos"].insert(0, {
+                    "url": url,
+                    "caption": desc,
+                    "autor": usuario,
+                    "fecha": datetime.now().strftime("%d/%m %I:%M %p")
+                })
                 save_github_file(DATA_FILE, st.session_state.app_data, "Add photo")
                 st.rerun()
 
         st.divider()
         for idx_foto, foto in enumerate(st.session_state.app_data["fotos"]):
             st.image(foto["url"], caption=f"{foto['caption']} - {foto['autor']} ({foto.get('fecha','')})", use_container_width=True)
-            if es_admin and st.button(f"🗑️ Eliminar foto", key=f"del_p_{idx_foto}"):
+            if es_admin and st.button("🗑️ Eliminar foto", key=f"del_p_{idx_foto}"):
                 delete_github_image_file(foto["url"])
                 st.session_state.app_data["fotos"].pop(idx_foto)
-                save_github_file(DATA_FILE, st.session_state.app_data, "Del photo")
-                st.rerun()
-            st.divider()
-
                 save_github_file(DATA_FILE, st.session_state.app_data, "Del photo")
                 st.rerun()
             st.divider()
