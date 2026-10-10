@@ -20,7 +20,7 @@ DATA_FILE = "data.json"
 CLAVE_ADMIN_EDWARD = "1234"
 
 # 🖼️ Foto de fondo personalizada
-NOMBRE_FOTO_FONDO = "IMG_0980.png"
+NOMBRE_FOTO_FONDO = "e6a657e1-1d26-4d0c-934f-db13ac1b360f.jpeg"
 bg_url = f"https://raw.githubusercontent.com/{REPO_OWNER}/{REPO_NAME}/main/{NOMBRE_FOTO_FONDO}"
 
 GITHUB_TOKEN = st.secrets.get("GITHUB_TOKEN", None)
