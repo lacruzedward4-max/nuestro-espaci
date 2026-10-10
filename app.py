@@ -47,7 +47,6 @@ def save_github_file(filepath, data_dict, commit_message="Update data"):
     try:
         res = requests.put(url, headers=headers, json=payload, timeout=10)
         if res.status_code in [200, 201]:
-            # Guardamos el nuevo SHA en sesión para no autorecargarnos a nosotros mismos
             st.session_state.last_sha = res.json()["content"]["sha"]
             return True, "Guardado con éxito"
     except: pass
@@ -104,13 +103,11 @@ if query_user == "yesenia": st.session_state.usuario_activo = "Yesenia Alejandra
 elif query_user == "edward": st.session_state.usuario_activo = "Edward ❤️"
 elif "usuario_activo" not in st.session_state: st.session_state.usuario_activo = None
 
-# ESTILOS CSS (Fondo estático, sin loaders, textos legibles)
+# ESTILOS CSS
 st.markdown(f"""
     <style>
-    /* Ocultar iconos de carga de Streamlit */
     [data-testid="stStatusWidget"], .stSpinner {{ display: none !important; visibility: hidden !important; }}
     
-    /* Fondo inamovible */
     [data-testid="stAppViewContainer"] {{
         background-image: url("{bg_url}") !important;
         background-size: cover !important;
@@ -119,7 +116,6 @@ st.markdown(f"""
     }}
     [data-testid="stHeader"] {{ background-color: transparent !important; }}
 
-    /* Sombras para que el texto resalte sobre cualquier fondo (Estilo Profesional) */
     p, label, span, div, li, h1, h2, h3 {{
         color: #ffffff !important;
         text-shadow: 2px 2px 5px rgba(0,0,0,0.9), 0px 0px 8px rgba(0,0,0,0.8) !important;
@@ -127,7 +123,6 @@ st.markdown(f"""
     }}
     h1, h2, h3 {{ color: #ffccd5 !important; }}
 
-    /* Inputs transparentes/oscuros estilo cristal */
     .stTextInput input, .stTextArea textarea {{
         background-color: rgba(0, 0, 0, 0.6) !important;
         color: white !important;
@@ -136,7 +131,6 @@ st.markdown(f"""
         padding: 10px !important;
     }}
 
-    /* Botones */
     .stButton>button {{
         background-color: #ff4d6d !important;
         color: #ffffff !important;
@@ -146,7 +140,6 @@ st.markdown(f"""
         padding: 8px !important;
     }}
 
-    /* Panel WhatsApp */
     .whatsapp-status-box {{
         background-color: rgba(0, 0, 0, 0.5);
         border: 2px solid #25D366;
@@ -155,7 +148,6 @@ st.markdown(f"""
         margin-bottom: 20px;
     }}
     
-    /* Animación latido */
     @keyframes latido {{ 0% {{ transform: scale(1); }} 14% {{ transform: scale(1.2); }} 28% {{ transform: scale(1); }} 42% {{ transform: scale(1.2); }} 70% {{ transform: scale(1); }} }}
     .corazon-animado {{ font-size: 75px !important; text-align: center; margin: 15px 0; animation: latido 1.4s infinite; display: block; }}
     </style>
@@ -186,16 +178,13 @@ if st.session_state.usuario_activo is None:
 else:
     usuario = st.session_state.usuario_activo
 
-    # --- MOTOR SILENCIOSO DE WHATSAPP (No interrumpe) ---
     @st.fragment(run_every="4s")
     def motor_sincronizacion_silenciosa():
         if GITHUB_TOKEN:
             _, remote_sha = get_github_file(DATA_FILE, solo_sha=True)
-            # Solo recarga SI hay datos nuevos en el servidor que tú no enviaste
             if remote_sha and st.session_state.last_sha and remote_sha != st.session_state.last_sha:
                 st.rerun()
     
-    # Ejecutamos el motor invisible
     motor_sincronizacion_silenciosa()
 
     # Barra Superior
@@ -208,30 +197,33 @@ else:
             st.query_params.clear()
             st.rerun()
 
-    def obtener_badge_estado(nombre_user):
-        last_str = st.session_state.app_data["status"].get(nombre_user, "")
-        if not last_str: return "⚪ Desconectado/a"
-        try:
-            dt = datetime.strptime(last_str, "%Y-%m-%d %H:%M:%S")
-            diferencia = (datetime.now() - dt).total_seconds()
-            if diferencia < 300: # Si se conectó hace menos de 5 mins
-                return "🟢 Reciente"
-            else:
-                return f"⚪ Última vez: {dt.strftime('%d/%m %I:%M %p')}"
-        except: return "⚪ Desconectado/a"
-
-    st.markdown(f"""
-        <div class='whatsapp-status-box'>
-            <div>👸 <b>Yesenia:</b> {obtener_badge_estado("Yesenia Alejandra 💕")}</div>
-            <div>🤴 <b>Edward:</b> {obtener_badge_estado("Edward ❤️")}</div>
-        </div>
-    """, unsafe_allow_html=True)
-
-    # Panel Admin
+    # PANEL ADMIN PRIMERO (Para habilitar opciones exclusivas)
     es_admin = False
     if usuario == "Edward ❤️":
         with st.expander("🛠️ Admin"):
-            if st.text_input("Clave:", type="password") == CLAVE_ADMIN_EDWARD: es_admin = True
+            if st.text_input("Clave:", type="password") == CLAVE_ADMIN_EDWARD: 
+                es_admin = True
+
+    # ESTADOS "EN LÍNEA" (SOLO VISIBLE SI ES ADMIN)
+    if es_admin:
+        def obtener_badge_estado(nombre_user):
+            last_str = st.session_state.app_data["status"].get(nombre_user, "")
+            if not last_str: return "⚪ Desconectado/a"
+            try:
+                dt = datetime.strptime(last_str, "%Y-%m-%d %H:%M:%S")
+                diferencia = (datetime.now() - dt).total_seconds()
+                if diferencia < 300:
+                    return "🟢 Reciente"
+                else:
+                    return f"⚪ Última vez: {dt.strftime('%d/%m %I:%M %p')}"
+            except: return "⚪ Desconectado/a"
+
+        st.markdown(f"""
+            <div class='whatsapp-status-box'>
+                <div>👸 <b>Yesenia:</b> {obtener_badge_estado("Yesenia Alejandra 💕")}</div>
+                <div>🤴 <b>Edward:</b> {obtener_badge_estado("Edward ❤️")}</div>
+            </div>
+        """, unsafe_allow_html=True)
 
     tab1, tab2, tab3 = st.tabs(["📌 Planes", "📝 Encuesta", "📸 Fotos"])
 
@@ -324,6 +316,10 @@ else:
             if es_admin and st.button(f"🗑️ Eliminar foto", key=f"del_p_{idx_foto}"):
                 delete_github_image_file(foto["url"])
                 st.session_state.app_data["fotos"].pop(idx_foto)
+                save_github_file(DATA_FILE, st.session_state.app_data, "Del photo")
+                st.rerun()
+            st.divider()
+
                 save_github_file(DATA_FILE, st.session_state.app_data, "Del photo")
                 st.rerun()
             st.divider()
