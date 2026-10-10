@@ -45,18 +45,7 @@
       "hecho": false
     }
   ],
-  "encuestas": [
-    {
-      "id": 1,
-      "autor": "Edward ❤️",
-      "fecha": "2026-10-10 05:37",
-      "p1": "Estar junto ",
-      "p2": "Ella ",
-      "p3": "Poco 🥺",
-      "p4": "Retos",
-      "comentarios": []
-    }
-  ],
+  "encuestas": [],
   "fotos": [],
   "status": {
     "Edward ❤️": "2026-10-10 05:58:41",
