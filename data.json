@@ -1,0 +1,28 @@
+{
+  "planes": [
+    {
+      "plan": "Ir a comer unos postres/helados ricos 🍦",
+      "hecho": false
+    },
+    {
+      "plan": "Tarde de películas, cobijas y comida chatarra 🍿",
+      "hecho": false
+    },
+    {
+      "plan": "Un picnic romántico al aire libre 🧺",
+      "hecho": false
+    },
+    {
+      "plan": "Salir a cenar a un sitio nuevo 🍔",
+      "hecho": false
+    }
+  ],
+  "encuestas": [],
+  "fotos": [
+    {
+      "url": "https://raw.githubusercontent.com/lacruzedward4-max/nuestro-espaci/main/uploads/20261010_051926_IMG_3685.png",
+      "caption": "Prueba",
+      "autor": "Yesenia Alejandra 💕"
+    }
+  ]
+}
