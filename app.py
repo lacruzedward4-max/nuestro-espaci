@@ -11,57 +11,96 @@ st.set_page_config(
     layout="centered"
 )
 
-# Integración con GitHub API
+# Constantes de GitHub
 REPO_OWNER = "lacruzedward4-max"
 REPO_NAME = "nuestro-espaci"
 DATA_FILE = "data.json"
+
+# 🖼️ Nombre de la foto de fondo (puedes cambiarlo si subes otra imagen a GitHub)
+NOMBRE_FOTO_FONDO = "IMG_0980.png"
+bg_url = f"https://raw.githubusercontent.com/{REPO_OWNER}/{REPO_NAME}/main/{NOMBRE_FOTO_FONDO}"
 
 GITHUB_TOKEN = st.secrets.get("GITHUB_TOKEN", None)
 
 def get_github_file(filepath):
     if not GITHUB_TOKEN:
         return None, None
-    headers = {"Authorization": f"token {GITHUB_TOKEN}"}
+    headers = {
+        "Authorization": f"token {GITHUB_TOKEN}",
+        "Accept": "application/vnd.github.v3+json"
+    }
     url = f"https://api.github.com/repos/{REPO_OWNER}/{REPO_NAME}/contents/{filepath}"
-    res = requests.get(url, headers=headers)
-    if res.status_code == 200:
-        content = res.json()
-        decoded = base64.b64decode(content["content"]).decode("utf-8")
-        return json.loads(decoded), content["sha"]
+    try:
+        res = requests.get(url, headers=headers, timeout=10)
+        if res.status_code == 200:
+            content = res.json()
+            decoded = base64.b64decode(content["content"]).decode("utf-8")
+            return json.loads(decoded), content["sha"]
+    except Exception:
+        pass
     return None, None
 
-def save_github_file(filepath, data_dict, sha=None, commit_message="Update data"):
+def save_github_file(filepath, data_dict, commit_message="Update data"):
     if not GITHUB_TOKEN:
-        return False
-    headers = {"Authorization": f"token {GITHUB_TOKEN}"}
+        return False, "No se encontró el GITHUB_TOKEN en Streamlit Secrets."
+    
+    headers = {
+        "Authorization": f"token {GITHUB_TOKEN}",
+        "Accept": "application/vnd.github.v3+json"
+    }
     url = f"https://api.github.com/repos/{REPO_OWNER}/{REPO_NAME}/contents/{filepath}"
+    
+    # Obtener el SHA en tiempo real justo antes de guardar para evitar bloqueos
+    _, current_sha = get_github_file(filepath)
+    
     encoded_content = base64.b64encode(json.dumps(data_dict, ensure_ascii=False, indent=2).encode("utf-8")).decode("utf-8")
     payload = {
         "message": commit_message,
         "content": encoded_content
     }
-    if sha:
-        payload["sha"] = sha
-    res = requests.put(url, headers=headers, json=payload)
-    return res.status_code in [200, 201]
+    if current_sha:
+        payload["sha"] = current_sha
+        
+    try:
+        res = requests.put(url, headers=headers, json=payload, timeout=10)
+        if res.status_code in [200, 201]:
+            return True, "Guardado con éxito"
+        else:
+            return False, f"Error {res.status_code} de GitHub: {res.text}"
+    except Exception as e:
+        return False, f"Excepción de conexión: {str(e)}"
 
 def save_github_image(filename, image_bytes):
     if not GITHUB_TOKEN:
-        return None
-    headers = {"Authorization": f"token {GITHUB_TOKEN}"}
+        return None, "No se encontró el GITHUB_TOKEN en Streamlit Secrets."
+    
+    headers = {
+        "Authorization": f"token {GITHUB_TOKEN}",
+        "Accept": "application/vnd.github.v3+json"
+    }
     filepath = f"uploads/{filename}"
     url = f"https://api.github.com/repos/{REPO_OWNER}/{REPO_NAME}/contents/{filepath}"
+    
+    _, current_sha = get_github_file(filepath)
     encoded_content = base64.b64encode(image_bytes).decode("utf-8")
     payload = {
         "message": f"Upload image {filename}",
         "content": encoded_content
     }
-    res = requests.put(url, headers=headers, json=payload)
-    if res.status_code in [200, 201]:
-        return f"https://raw.githubusercontent.com/{REPO_OWNER}/{REPO_NAME}/main/{filepath}"
-    return None
+    if current_sha:
+        payload["sha"] = current_sha
+        
+    try:
+        res = requests.put(url, headers=headers, json=payload, timeout=10)
+        if res.status_code in [200, 201]:
+            raw_url = f"https://raw.githubusercontent.com/{REPO_OWNER}/{REPO_NAME}/main/{filepath}"
+            return raw_url, "Imagen guardada exitosamente"
+        else:
+            return None, f"Error {res.status_code} al subir imagen: {res.text}"
+    except Exception as e:
+        return None, f"Excepción al subir imagen: {str(e)}"
 
-# Datos iniciales
+# Estructura de datos inicial
 initial_data = {
     "planes": [
         {"plan": "Ir a comer unos postres/helados ricos 🍦", "hecho": False},
@@ -73,12 +112,15 @@ initial_data = {
     "fotos": []
 }
 
-remote_data, file_sha = get_github_file(DATA_FILE)
-app_data = remote_data if remote_data else initial_data
+# Inicializar Estado de Sesión
+if "app_data" not in st.session_state:
+    remote_data, _ = get_github_file(DATA_FILE)
+    if remote_data:
+        st.session_state.app_data = remote_data
+    else:
+        st.session_state.app_data = initial_data
 
-# Foto de fondo personalizada (IMG_0980.png)
-bg_url = f"https://raw.githubusercontent.com/{REPO_OWNER}/{REPO_NAME}/main/IMG_0980.png"
-
+# Estilos CSS de Máximo Contraste (Tarjeta blanca + letras negras)
 st.markdown(f"""
     <style>
     .stApp {{
@@ -88,56 +130,90 @@ st.markdown(f"""
         background-repeat: no-repeat;
         background-attachment: fixed;
     }}
+    
+    /* Contenedor principal: Tarjeta blanca sólida */
     .main .block-container {{
-        background-color: rgba(255, 255, 255, 0.95);
-        padding: 25px;
+        background-color: #ffffff !important;
+        padding: 30px;
         border-radius: 20px;
-        margin-top: 15px;
-        box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.25);
+        margin-top: 20px;
+        box-shadow: 0 12px 40px rgba(0, 0, 0, 0.4);
+        border: 2px solid #ff4d6d;
     }}
-    h1, h2, h3, p, label, span, div {{
-        color: #1a1a1a !important;
+
+    /* Textos principales en negro legible */
+    p, label, span, div, li {{
+        color: #000000 !important;
+        font-weight: 600 !important;
     }}
+
+    /* Títulos */
     h1, h2, h3 {{
         color: #c9184a !important;
         text-align: center;
+        font-weight: 800 !important;
     }}
+
+    /* Frase especial */
     .frase-especial {{
         color: #590d22 !important;
         font-size: 1.1rem;
         font-weight: bold;
         text-align: center;
         background-color: #ffccd5;
-        padding: 15px;
-        border-radius: 15px;
+        padding: 16px;
+        border-radius: 12px;
         border-left: 6px solid #ff4d6d;
         margin: 15px 0;
     }}
+
+    /* Campos de entrada de texto */
     .stTextInput input, .stTextArea textarea {{
         color: #000000 !important;
-        background-color: #ffffff !important;
+        background-color: #f8f9fa !important;
         border: 2px solid #ff4d6d !important;
         border-radius: 10px !important;
+        font-weight: 600 !important;
     }}
+
+    /* Checkboxes de planes */
     .stCheckbox label p {{
         color: #000000 !important;
         font-size: 1.05rem !important;
-        font-weight: 600 !important;
+        font-weight: 700 !important;
     }}
+
+    /* Botones */
     .stButton>button {{
         background-color: #ff4d6d;
-        color: white !important;
-        border-radius: 20px;
+        color: #ffffff !important;
+        border-radius: 25px;
         border: none;
         font-weight: bold;
+        font-size: 1.05rem;
         width: 100%;
-        padding: 10px;
+        padding: 12px;
+        box-shadow: 0 4px 10px rgba(255, 77, 109, 0.3);
+    }}
+
+    /* Pestañas */
+    .stTabs [data-baseweb="tab"] {{
+        color: #000000 !important;
+        font-weight: bold !important;
+    }}
+    .stTabs [aria-selected="true"] {{
+        background-color: #ff4d6d !important;
+        color: #ffffff !important;
+        border-radius: 8px;
     }}
     </style>
 """, unsafe_allow_html=True)
 
+if not GITHUB_TOKEN:
+    st.error("⚠️ Atención: No se detectó 'GITHUB_TOKEN' en Streamlit Cloud Secrets. La app estará en modo lectura.")
+
 st.title("💖 Nuestro Espacio Especial 💖")
-st.write("<h3 style='text-align: center; color: #a4133c;'>Dedicado a Yesenia Alejandra 💕</h3>", unsafe_allow_html=True)
+st.write("<h3 style='text-align: center;'>Dedicado a Yesenia Alejandra 💕</h3>", unsafe_allow_html=True)
 
 st.markdown("""
     <div class='frase-especial'>
@@ -145,7 +221,7 @@ st.markdown("""
     </div>
 """, unsafe_allow_html=True)
 
-usuario = st.selectbox("👤 ¿Quién está en la app ahora?", ["Yesenia Alejandra 💕", "Edward ❤️"])
+usuario = st.selectbox("👤 ¿Quién está interactuando ahora?", ["Yesenia Alejandra 💕", "Edward ❤️"])
 
 tab1, tab2, tab3 = st.tabs(["📌 Nuestros Planes", "📝 Encuesta Semanal", "📸 Recuerdos"])
 
@@ -154,25 +230,33 @@ with tab1:
     st.subheader("📌 Lista de Nuestros Próximos Planes")
     
     cambio_planes = False
-    for idx, item in enumerate(app_data["planes"]):
+    for idx, item in enumerate(st.session_state.app_data["planes"]):
         estado = st.checkbox(item["plan"], value=item["hecho"], key=f"plan_{idx}")
         if estado != item["hecho"]:
-            app_data["planes"][idx]["hecho"] = estado
+            st.session_state.app_data["planes"][idx]["hecho"] = estado
             cambio_planes = True
             
-    if cambio_planes and GITHUB_TOKEN:
-        save_github_file(DATA_FILE, app_data, file_sha, "Update planes status")
-        st.rerun()
+    if cambio_planes:
+        ok, msg = save_github_file(DATA_FILE, st.session_state.app_data, "Update planes status")
+        if ok:
+            st.toast("¡Estado de plan actualizado! 💖")
+            st.rerun()
+        else:
+            st.error(f"Error al guardar cambio: {msg}")
 
     st.divider()
     nuevo_plan = st.text_input("➕ Agregar nuevo plan a la lista:")
     if st.button("Guardar Plan 📝"):
         if nuevo_plan.strip():
-            app_data["planes"].append({"plan": nuevo_plan.strip(), "hecho": False})
-            if GITHUB_TOKEN:
-                save_github_file(DATA_FILE, app_data, file_sha, "Add new plan")
-            st.success("¡Plan agregado exitosamente!")
-            st.rerun()
+            st.session_state.app_data["planes"].append({"plan": nuevo_plan.strip(), "hecho": False})
+            ok, msg = save_github_file(DATA_FILE, st.session_state.app_data, "Add new plan")
+            if ok:
+                st.success("¡Plan agregado exitosamente!")
+                st.rerun()
+            else:
+                st.error(f"Error al guardar plan: {msg}")
+        else:
+            st.warning("Escribe una propuesta de plan antes de guardar.")
 
 # TAB 2: ENCUESTA
 with tab2:
@@ -185,27 +269,32 @@ with tab2:
         p4 = st.text_area("4. Un mensajito o nota secreta ❤️")
         
         if st.button("Enviar Respuestas 💌"):
-            nueva_resp = {
-                "id": len(app_data["encuestas"]) + 1,
-                "autor": usuario,
-                "fecha": datetime.now().strftime("%Y-%m-%d %H:%M"),
-                "p1": p1, "p2": p2, "p3": p3, "p4": p4,
-                "comentarios": []
-            }
-            app_data["encuestas"].insert(0, nueva_resp)
-            if GITHUB_TOKEN:
-                save_github_file(DATA_FILE, app_data, file_sha, "New survey response")
-            st.success("¡Respuesta registrada!")
-            st.balloons()
-            st.rerun()
+            if p1.strip() or p2.strip() or p4.strip():
+                nueva_resp = {
+                    "id": len(st.session_state.app_data["encuestas"]) + 1,
+                    "autor": usuario,
+                    "fecha": datetime.now().strftime("%Y-%m-%d %H:%M"),
+                    "p1": p1, "p2": p2, "p3": p3, "p4": p4,
+                    "comentarios": []
+                }
+                st.session_state.app_data["encuestas"].insert(0, nueva_resp)
+                ok, msg = save_github_file(DATA_FILE, st.session_state.app_data, "New survey response")
+                if ok:
+                    st.success("¡Respuesta registrada exitosamente!")
+                    st.balloons()
+                    st.rerun()
+                else:
+                    st.error(f"Error al guardar encuesta: {msg}")
+            else:
+                st.warning("Responde al menos uno de los campos antes de enviar.")
 
     st.divider()
     st.subheader("💬 Respuestas y Comentarios Mutuos")
     
-    if not app_data["encuestas"]:
+    if not st.session_state.app_data["encuestas"]:
         st.info("Aún no hay respuestas registradas. ¡Sé el primero en responder arriba!")
     else:
-        for enc in app_data["encuestas"]:
+        for enc in st.session_state.app_data["encuestas"]:
             st.markdown(f"### 💌 Encuesta de {enc['autor']} ({enc['fecha']})")
             st.write(f"**1. Momento favorito:** {enc['p1']}")
             st.write(f"**2. Antojo/Plan:** {enc['p2']}")
@@ -218,13 +307,15 @@ with tab2:
                     st.write(f"- *{c['autor']}*: {c['texto']}")
             
             nuevo_comentario = st.text_input(f"Comentar en la respuesta de {enc['autor']}:", key=f"comm_in_{enc['id']}")
-            if st.button(f"Comentar 💬", key=f"comm_btn_{enc['id']}"):
+            if st.button("Comentar 💬", key=f"comm_btn_{enc['id']}"):
                 if nuevo_comentario.strip():
                     enc["comentarios"].append({"autor": usuario, "texto": nuevo_comentario.strip()})
-                    if GITHUB_TOKEN:
-                        save_github_file(DATA_FILE, app_data, file_sha, "Add comment")
-                    st.success("Comentario publicado.")
-                    st.rerun()
+                    ok, msg = save_github_file(DATA_FILE, st.session_state.app_data, "Add comment")
+                    if ok:
+                        st.success("Comentario publicado.")
+                        st.rerun()
+                    else:
+                        st.error(f"Error al publicar comentario: {msg}")
             st.divider()
 
 # TAB 3: RECUERDOS
@@ -239,16 +330,26 @@ with tab3:
             bytes_data = foto_archivo.getvalue()
             nombre_foto = f"{datetime.now().strftime('%Y%m%d_%H%M%S')}_{foto_archivo.name}"
             
-            url_guardada = save_github_image(nombre_foto, bytes_data)
+            with st.spinner("Guardando foto en la galería..."):
+                url_guardada, msg_img = save_github_image(nombre_foto, bytes_data)
+                
             if url_guardada:
-                app_data["fotos"].insert(0, {"url": url_guardada, "caption": descripcion_foto, "autor": usuario})
-                save_github_file(DATA_FILE, app_data, file_sha, "Add new photo")
-                st.success("¡Foto guardada en la galería compartida!")
-                st.rerun()
+                nueva_foto = {"url": url_guardada, "caption": descripcion_foto, "autor": usuario}
+                st.session_state.app_data["fotos"].insert(0, nueva_foto)
+                ok_json, msg_json = save_github_file(DATA_FILE, st.session_state.app_data, "Add new photo")
+                if ok_json:
+                    st.success("¡Foto guardada en la galería compartida!")
+                    st.rerun()
+                else:
+                    st.error(f"Error al actualizar la lista de fotos: {msg_json}")
+            else:
+                st.error(f"Error al subir la imagen: {msg_img}")
+        else:
+            st.warning("Selecciona una foto de tu teléfono antes de hacer clic en guardar.")
 
     st.divider()
-    if not app_data["fotos"]:
+    if not st.session_state.app_data["fotos"]:
         st.info("Aún no hay fotos subidas en la galería.")
     else:
-        for foto in app_data["fotos"]:
+        for foto in st.session_state.app_data["fotos"]:
             st.image(foto["url"], caption=f"{foto['caption']} — Subido por {foto['autor']}", use_container_width=True)
