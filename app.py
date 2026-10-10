@@ -16,7 +16,10 @@ REPO_OWNER = "lacruzedward4-max"
 REPO_NAME = "nuestro-espaci"
 DATA_FILE = "data.json"
 
-# 🖼️ Nombre de la foto de fondo subida a tu repositorio
+# 🔑 CLAVE DE ADMINISTRADOR (Cambia "1234" por la clave secreta que prefieras para Edward)
+CLAVE_ADMIN_EDWARD = "1234"
+
+# 🖼️ Foto de fondo personalizada
 NOMBRE_FOTO_FONDO = "IMG_0980.png"
 bg_url = f"https://raw.githubusercontent.com/{REPO_OWNER}/{REPO_NAME}/main/{NOMBRE_FOTO_FONDO}"
 
@@ -99,6 +102,27 @@ def save_github_image(filename, image_bytes):
     except Exception as e:
         return None, f"Excepción al subir imagen: {str(e)}"
 
+def delete_github_image_file(image_url):
+    """Elimina el archivo de imagen físico del repositorio en GitHub"""
+    if not GITHUB_TOKEN or not image_url:
+        return False
+    try:
+        if "/main/" in image_url:
+            filepath = image_url.split("/main/")[-1]
+            _, sha = get_github_file(filepath)
+            if sha:
+                headers = {
+                    "Authorization": f"token {GITHUB_TOKEN}",
+                    "Accept": "application/vnd.github.v3+json"
+                }
+                url = f"https://api.github.com/repos/{REPO_OWNER}/{REPO_NAME}/contents/{filepath}"
+                payload = {"message": f"Delete image {filepath}", "sha": sha}
+                res = requests.delete(url, headers=headers, json=payload, timeout=10)
+                return res.status_code in [200, 201]
+    except Exception:
+        pass
+    return False
+
 # Estructura inicial
 initial_data = {
     "planes": [
@@ -119,7 +143,7 @@ if "app_data" not in st.session_state:
     else:
         st.session_state.app_data = initial_data
 
-# CSS para móvil Streamlit: Tarjeta blanca opaca de alto contraste
+# Estilos CSS de Máximo Contraste (Tarjeta blanca + letras negras)
 st.markdown(f"""
     <style>
     /* Fondo con foto */
@@ -135,7 +159,7 @@ st.markdown(f"""
         background-color: rgba(0, 0, 0, 0) !important;
     }}
 
-    /* Tarjeta Blanca Sólida para el Contenido */
+    /* Tarjeta Blanca Sólida */
     [data-testid="block-container"] {{
         background-color: #ffffff !important;
         padding: 25px !important;
@@ -146,7 +170,7 @@ st.markdown(f"""
         border: 3px solid #ff4d6d !important;
     }}
 
-    /* Forzar que TODO el texto sea NEGRO brillante */
+    /* Textos en negro puro */
     [data-testid="block-container"] p, 
     [data-testid="block-container"] label, 
     [data-testid="block-container"] span, 
@@ -165,7 +189,7 @@ st.markdown(f"""
         font-weight: 800 !important;
     }}
 
-    /* Frase especial estilo banner */
+    /* Banner romántico */
     .frase-especial {{
         color: #590d22 !important;
         font-size: 1.1rem !important;
@@ -326,6 +350,19 @@ with tab2:
 with tab3:
     st.subheader("📸 Galería de Recuerdos")
     
+    # Verificación de Modo Administrador para Edward
+    es_admin = False
+    if usuario == "Edward ❤️":
+        with st.expander("🛠️ Panel Administrador (Edward)"):
+            clave_input = st.text_input("Clave de Desarrollador/Administrador:", type="password", key="pwd_admin")
+            if clave_input == CLAVE_ADMIN_EDWARD:
+                es_admin = True
+                st.success("🔓 Modo Administrador Activo: Tienes permisos para eliminar fotos.")
+            elif clave_input:
+                st.error("❌ Clave incorrecta.")
+
+    st.divider()
+    
     foto_archivo = st.file_uploader("Selecciona una foto 📲", type=["jpg", "png", "jpeg"])
     descripcion_foto = st.text_input("Pie de foto o recuerdo:")
     
@@ -355,5 +392,22 @@ with tab3:
     if not st.session_state.app_data["fotos"]:
         st.info("Aún no hay fotos subidas en la galería.")
     else:
-        for foto in st.session_state.app_data["fotos"]:
+        for idx_foto, foto in enumerate(st.session_state.app_data["fotos"]):
             st.image(foto["url"], caption=f"{foto['caption']} — Subido por {foto['autor']}", use_container_width=True)
+            
+            # Botón de Eliminación (Sólo visible para Edward con clave activa)
+            if es_admin:
+                if st.button(f"🗑️ Eliminar esta foto", key=f"del_photo_{idx_foto}"):
+                    with st.spinner("Eliminando foto..."):
+                        # 1. Eliminar archivo de GitHub
+                        delete_github_image_file(foto["url"])
+                        # 2. Eliminar de la lista de datos
+                        st.session_state.app_data["fotos"].pop(idx_foto)
+                        # 3. Guardar cambios
+                        ok, msg = save_github_file(DATA_FILE, st.session_state.app_data, "Delete photo")
+                        if ok:
+                            st.success("Foto eliminada correctamente.")
+                            st.rerun()
+                        else:
+                            st.error(f"Error al guardar cambios: {msg}")
+            st.divider()
