@@ -3,6 +3,7 @@ import json
 import base64
 import requests
 from datetime import datetime
+import streamlit.components.v1 as components
 
 # Configuración de página
 st.set_page_config(
@@ -16,10 +17,10 @@ REPO_OWNER = "lacruzedward4-max"
 REPO_NAME = "nuestro-espaci"
 DATA_FILE = "data.json"
 
-# 🔑 CLAVE DE ADMINISTRADOR
+# 🔑 CLAVE DE ADMINISTRADOR (Edward)
 CLAVE_ADMIN_EDWARD = "1234"
 
-# 🖼️ Nombre exacto de la foto de fondo
+# 🖼️ Foto de fondo
 NOMBRE_FOTO_FONDO = "e6a657e1-1d26-4d0c-934f-db13ac1b360f.jpeg"
 bg_url = f"https://raw.githubusercontent.com/{REPO_OWNER}/{REPO_NAME}/main/{NOMBRE_FOTO_FONDO}"
 
@@ -122,29 +123,31 @@ def delete_github_image_file(image_url):
         pass
     return False
 
-# Carga de datos iniciales
-initial_data = {
-    "planes": [
-        {"plan": "Ir a comer unos postres/helados ricos 🍦", "hecho": False, "fecha": datetime.now().strftime("%d/%m/%Y %I:%M %p"), "autor": "Edward ❤️"},
-        {"plan": "Tarde de películas, cobijas y comida chatarra 🍿", "hecho": False, "fecha": datetime.now().strftime("%d/%m/%Y %I:%M %p"), "autor": "Edward ❤️"}
-    ],
-    "encuestas": [],
-    "fotos": [],
-    "status": {}
-}
-
-# Session State
-if "app_data" not in st.session_state:
-    remote_data, _ = get_github_file(DATA_FILE)
-    if remote_data:
-        st.session_state.app_data = remote_data
-    else:
-        st.session_state.app_data = initial_data
+# Carga en vivo permanente desde GitHub para sincronización instantánea
+remote_data, _ = get_github_file(DATA_FILE)
+if remote_data:
+    st.session_state.app_data = remote_data
+elif "app_data" not in st.session_state:
+    st.session_state.app_data = {
+        "planes": [
+            {"plan": "Ir a comer unos postres/helados ricos 🍦", "hecho": False, "fecha": datetime.now().strftime("%d/%m/%Y %I:%M %p"), "autor": "Edward ❤️"},
+            {"plan": "Tarde de películas, cobijas y comida chatarra 🍿", "hecho": False, "fecha": datetime.now().strftime("%d/%m/%Y %I:%M %p"), "autor": "Edward ❤️"}
+        ],
+        "encuestas": [],
+        "fotos": [],
+        "status": {}
+    }
 
 if "status" not in st.session_state.app_data:
     st.session_state.app_data["status"] = {}
 
-if "usuario_activo" not in st.session_state:
+# Persistent user login via URL parameter
+query_user = st.query_params.get("user", None)
+if query_user == "yesenia":
+    st.session_state.usuario_activo = "Yesenia Alejandra 💕"
+elif query_user == "edward":
+    st.session_state.usuario_activo = "Edward ❤️"
+elif "usuario_activo" not in st.session_state:
     st.session_state.usuario_activo = None
 
 # Estilos CSS
@@ -174,7 +177,7 @@ st.markdown(f"""
         border: 3px solid #ff4d6d !important;
     }}
 
-    /* Forzar texto negro */
+    /* Texto negro */
     [data-testid="block-container"] p, 
     [data-testid="block-container"] label, 
     [data-testid="block-container"] span, 
@@ -209,7 +212,7 @@ st.markdown(f"""
         display: block;
     }}
 
-    /* Banner Frase Especial */
+    /* Banner Frase */
     .frase-especial {{
         color: #590d22 !important;
         font-size: 1.1rem !important;
@@ -222,7 +225,7 @@ st.markdown(f"""
         margin: 15px 0 !important;
     }}
 
-    /* Cuadro WhatsApp Status */
+    /* Cuadro Status WhatsApp */
     .whatsapp-status-box {{
         background-color: #f0f2f5;
         border: 2px solid #25D366;
@@ -277,7 +280,7 @@ st.markdown(f"""
     </style>
 """, unsafe_allow_html=True)
 
-# 📖 PANTALLA DE ENTRADA / PORTADA DEL LIBRO DE NUESTRA HISTORIA
+# 📖 PORTADA DEL LIBRO DE NUESTRA HISTORIA
 if st.session_state.usuario_activo is None:
     st.markdown("<h1 style='text-align: center;'>📖 Nuestro Libro de la Historia 💖</h1>", unsafe_allow_html=True)
     st.markdown("<div class='corazon-animado'>💖</div>", unsafe_allow_html=True)
@@ -288,26 +291,42 @@ if st.session_state.usuario_activo is None:
     with col_a:
         if st.button("👸 Soy Yesenia 💕", key="btn_login_yesenia"):
             st.session_state.usuario_activo = "Yesenia Alejandra 💕"
+            st.query_params["user"] = "yesenia"
             st.balloons()
             st.rerun()
 
     with col_b:
         if st.button("🤴 Soy Edward ❤️", key="btn_login_edward"):
             st.session_state.usuario_activo = "Edward ❤️"
+            st.query_params["user"] = "edward"
             st.balloons()
             st.rerun()
 
-# 💖 APLICACIÓN PRINCIPAL (LIBRO ABIERTO)
+# 💖 LIBRO ABIERTO
 else:
     usuario = st.session_state.usuario_activo
 
-    # Barra Superior de Bienvenida
+    # Auto-refresco de 8 segundos para sincronización en tiempo real (Tipo WhatsApp)
+    components.html(
+        """
+        <script>
+            setTimeout(function(){
+                window.parent.location.reload();
+            }, 8000);
+        </script>
+        """,
+        height=0,
+        width=0
+    )
+
+    # Barra Superior
     c1, c2 = st.columns([0.65, 0.35])
     with c1:
         st.markdown(f"<b>Hola, {usuario}</b>", unsafe_allow_html=True)
     with c2:
         if st.button("🔄 Cerrar Libro", key="btn_logout"):
             st.session_state.usuario_activo = None
+            st.query_params.clear()
             st.rerun()
 
     st.title("💖 Nuestro Espacio Especial 💖")
@@ -343,7 +362,7 @@ else:
     status_yesenia = obtener_badge_estado("Yesenia Alejandra 💕")
     status_edward = obtener_badge_estado("Edward ❤️")
 
-    # Recuadro de Estados WhatsApp
+    # Cuadro WhatsApp
     st.markdown(f"""
         <div class='whatsapp-status-box'>
             <div class='status-item'>👸 <b>Yesenia Alejandra:</b> {status_yesenia}</div>
@@ -351,7 +370,7 @@ else:
         </div>
     """, unsafe_allow_html=True)
 
-    # Panel de Administrador Global para Edward
+    # Panel Admin
     es_admin = False
     if usuario == "Edward ❤️":
         with st.expander("🛠️ Panel Administrador (Edward)"):
