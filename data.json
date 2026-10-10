@@ -57,7 +57,14 @@
       "comentarios": []
     }
   ],
-  "fotos": [],
+  "fotos": [
+    {
+      "url": "https://raw.githubusercontent.com/lacruzedward4-max/nuestro-espaci/main/uploads/20261010_055724_IMG-20260929-WA0005.jpg",
+      "caption": "prueba ",
+      "autor": "Yesenia Alejandra 💕",
+      "fecha": "10/10/2026 05:57 AM"
+    }
+  ],
   "status": {
     "Edward ❤️": "2026-10-10 05:54:06",
     "Yesenia Alejandra 💕": "2026-10-10 05:57:23"
