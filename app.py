@@ -16,7 +16,7 @@ REPO_OWNER = "lacruzedward4-max"
 REPO_NAME = "nuestro-espaci"
 DATA_FILE = "data.json"
 
-# 🖼️ Nombre de la foto de fondo (puedes cambiarlo si subes otra imagen a GitHub)
+# 🖼️ Nombre de la foto de fondo subida a tu repositorio
 NOMBRE_FOTO_FONDO = "IMG_0980.png"
 bg_url = f"https://raw.githubusercontent.com/{REPO_OWNER}/{REPO_NAME}/main/{NOMBRE_FOTO_FONDO}"
 
@@ -50,7 +50,6 @@ def save_github_file(filepath, data_dict, commit_message="Update data"):
     }
     url = f"https://api.github.com/repos/{REPO_OWNER}/{REPO_NAME}/contents/{filepath}"
     
-    # Obtener el SHA en tiempo real justo antes de guardar para evitar bloqueos
     _, current_sha = get_github_file(filepath)
     
     encoded_content = base64.b64encode(json.dumps(data_dict, ensure_ascii=False, indent=2).encode("utf-8")).decode("utf-8")
@@ -100,7 +99,7 @@ def save_github_image(filename, image_bytes):
     except Exception as e:
         return None, f"Excepción al subir imagen: {str(e)}"
 
-# Estructura de datos inicial
+# Estructura inicial
 initial_data = {
     "planes": [
         {"plan": "Ir a comer unos postres/helados ricos 🍦", "hecho": False},
@@ -112,7 +111,7 @@ initial_data = {
     "fotos": []
 }
 
-# Inicializar Estado de Sesión
+# Session State
 if "app_data" not in st.session_state:
     remote_data, _ = get_github_file(DATA_FILE)
     if remote_data:
@@ -120,91 +119,96 @@ if "app_data" not in st.session_state:
     else:
         st.session_state.app_data = initial_data
 
-# Estilos CSS de Máximo Contraste (Tarjeta blanca + letras negras)
+# CSS para móvil Streamlit: Tarjeta blanca opaca de alto contraste
 st.markdown(f"""
     <style>
-    .stApp {{
-        background-image: url("{bg_url}");
-        background-size: cover;
-        background-position: center;
-        background-repeat: no-repeat;
-        background-attachment: fixed;
+    /* Fondo con foto */
+    [data-testid="stAppViewContainer"] {{
+        background-image: url("{bg_url}") !important;
+        background-size: cover !important;
+        background-position: center !important;
+        background-repeat: no-repeat !important;
+        background-attachment: fixed !important;
     }}
     
-    /* Contenedor principal: Tarjeta blanca sólida */
-    .main .block-container {{
-        background-color: #ffffff !important;
-        padding: 30px;
-        border-radius: 20px;
-        margin-top: 20px;
-        box-shadow: 0 12px 40px rgba(0, 0, 0, 0.4);
-        border: 2px solid #ff4d6d;
+    [data-testid="stHeader"] {{
+        background-color: rgba(0, 0, 0, 0) !important;
     }}
 
-    /* Textos principales en negro legible */
-    p, label, span, div, li {{
+    /* Tarjeta Blanca Sólida para el Contenido */
+    [data-testid="block-container"] {{
+        background-color: #ffffff !important;
+        padding: 25px !important;
+        border-radius: 20px !important;
+        box-shadow: 0 10px 30px rgba(0,0,0,0.5) !important;
+        margin-top: 1rem !important;
+        margin-bottom: 2rem !important;
+        border: 3px solid #ff4d6d !important;
+    }}
+
+    /* Forzar que TODO el texto sea NEGRO brillante */
+    [data-testid="block-container"] p, 
+    [data-testid="block-container"] label, 
+    [data-testid="block-container"] span, 
+    [data-testid="block-container"] div, 
+    [data-testid="block-container"] li {{
         color: #000000 !important;
         font-weight: 600 !important;
     }}
 
-    /* Títulos */
-    h1, h2, h3 {{
+    /* Títulos principales */
+    [data-testid="block-container"] h1, 
+    [data-testid="block-container"] h2, 
+    [data-testid="block-container"] h3 {{
         color: #c9184a !important;
-        text-align: center;
+        text-align: center !important;
         font-weight: 800 !important;
     }}
 
-    /* Frase especial */
+    /* Frase especial estilo banner */
     .frase-especial {{
         color: #590d22 !important;
-        font-size: 1.1rem;
-        font-weight: bold;
-        text-align: center;
-        background-color: #ffccd5;
-        padding: 16px;
-        border-radius: 12px;
-        border-left: 6px solid #ff4d6d;
-        margin: 15px 0;
+        font-size: 1.1rem !important;
+        font-weight: bold !important;
+        text-align: center !important;
+        background-color: #ffccd5 !important;
+        padding: 16px !important;
+        border-radius: 12px !important;
+        border-left: 6px solid #ff4d6d !important;
+        margin: 15px 0 !important;
     }}
 
-    /* Campos de entrada de texto */
+    /* Inputs de escribir */
     .stTextInput input, .stTextArea textarea {{
         color: #000000 !important;
-        background-color: #f8f9fa !important;
+        background-color: #f1f3f5 !important;
         border: 2px solid #ff4d6d !important;
         border-radius: 10px !important;
         font-weight: 600 !important;
     }}
 
-    /* Checkboxes de planes */
-    .stCheckbox label p {{
-        color: #000000 !important;
-        font-size: 1.05rem !important;
-        font-weight: 700 !important;
-    }}
-
     /* Botones */
     .stButton>button {{
-        background-color: #ff4d6d;
+        background-color: #ff4d6d !important;
         color: #ffffff !important;
-        border-radius: 25px;
-        border: none;
-        font-weight: bold;
-        font-size: 1.05rem;
-        width: 100%;
-        padding: 12px;
-        box-shadow: 0 4px 10px rgba(255, 77, 109, 0.3);
+        border-radius: 25px !important;
+        border: none !important;
+        font-weight: bold !important;
+        font-size: 1.05rem !important;
+        width: 100% !important;
+        padding: 12px !important;
     }}
 
     /* Pestañas */
-    .stTabs [data-baseweb="tab"] {{
+    [data-baseweb="tab-list"] button {{
+        background-color: #f1f3f5 !important;
         color: #000000 !important;
+        border-radius: 8px !important;
         font-weight: bold !important;
     }}
-    .stTabs [aria-selected="true"] {{
+    [data-baseweb="tab-list"] button[aria-selected="true"] {{
         background-color: #ff4d6d !important;
         color: #ffffff !important;
-        border-radius: 8px;
     }}
     </style>
 """, unsafe_allow_html=True)
