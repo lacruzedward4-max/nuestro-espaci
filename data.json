@@ -29,18 +29,7 @@
       "hecho": false
     }
   ],
-  "encuestas": [
-    {
-      "id": 2,
-      "autor": "Edward ❤️",
-      "fecha": "10/10/2026 06:17 AM",
-      "p1": "prueba 🧾",
-      "p2": "ksgs",
-      "p3": "Normal 😊",
-      "p4": "tLH",
-      "comentarios": []
-    }
-  ],
+  "encuestas": [],
   "fotos": [
     {
       "url": "https://raw.githubusercontent.com/lacruzedward4-max/nuestro-espaci/main/uploads/20261010_061312_IMG_3685.png",
