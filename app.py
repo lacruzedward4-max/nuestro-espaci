@@ -1,4 +1,4 @@
-import streamlit as st
+ import streamlit as st
 import json
 import base64
 import requests
@@ -6,8 +6,8 @@ from datetime import datetime
 
 # Configuración de página
 st.set_page_config(
-    page_title="Para Yesenia Alejandra ❤️",
-    page_icon="💖",
+    page_title="El Libro de Nuestro Espacio ❤️",
+    page_icon="📖",
     layout="centered"
 )
 
@@ -16,10 +16,10 @@ REPO_OWNER = "lacruzedward4-max"
 REPO_NAME = "nuestro-espaci"
 DATA_FILE = "data.json"
 
-# 🔑 CLAVE DE ADMINISTRADOR (Cambia "1234" por la clave secreta que prefieras para Edward)
+# 🔑 CLAVE DE ADMINISTRADOR (Modifica "1234" si deseas otra clave para Edward)
 CLAVE_ADMIN_EDWARD = "1234"
 
-# 🖼️ Foto de fondo personalizada
+# 🖼️ Nombre exacto de la foto de fondo
 NOMBRE_FOTO_FONDO = "e6a657e1-1d26-4d0c-934f-db13ac1b360f.jpeg"
 bg_url = f"https://raw.githubusercontent.com/{REPO_OWNER}/{REPO_NAME}/main/{NOMBRE_FOTO_FONDO}"
 
@@ -103,7 +103,6 @@ def save_github_image(filename, image_bytes):
         return None, f"Excepción al subir imagen: {str(e)}"
 
 def delete_github_image_file(image_url):
-    """Elimina el archivo de imagen físico del repositorio en GitHub"""
     if not GITHUB_TOKEN or not image_url:
         return False
     try:
@@ -123,16 +122,15 @@ def delete_github_image_file(image_url):
         pass
     return False
 
-# Estructura inicial
+# Carga de datos iniciales
 initial_data = {
     "planes": [
-        {"plan": "Ir a comer unos postres/helados ricos 🍦", "hecho": False},
-        {"plan": "Tarde de películas, cobijas y comida chatarra 🍿", "hecho": False},
-        {"plan": "Un picnic romántico al aire libre 🧺", "hecho": False},
-        {"plan": "Salir a cenar a un sitio nuevo 🍔", "hecho": False}
+        {"plan": "Ir a comer unos postres/helados ricos 🍦", "hecho": False, "fecha": datetime.now().strftime("%d/%m/%Y %I:%M %p"), "autor": "Edward ❤️"},
+        {"plan": "Tarde de películas, cobijas y comida chatarra 🍿", "hecho": False, "fecha": datetime.now().strftime("%d/%m/%Y %I:%M %p"), "autor": "Edward ❤️"}
     ],
     "encuestas": [],
-    "fotos": []
+    "fotos": [],
+    "status": {}
 }
 
 # Session State
@@ -143,10 +141,16 @@ if "app_data" not in st.session_state:
     else:
         st.session_state.app_data = initial_data
 
-# Estilos CSS de Máximo Contraste (Tarjeta blanca + letras negras)
+if "status" not in st.session_state.app_data:
+    st.session_state.app_data["status"] = {}
+
+if "usuario_activo" not in st.session_state:
+    st.session_state.usuario_activo = None
+
+# Estilos CSS con Animación de Corazón Latiendo y Libro Romántico
 st.markdown(f"""
     <style>
-    /* Fondo con foto */
+    /* Fondo */
     [data-testid="stAppViewContainer"] {{
         background-image: url("{bg_url}") !important;
         background-size: cover !important;
@@ -159,7 +163,7 @@ st.markdown(f"""
         background-color: rgba(0, 0, 0, 0) !important;
     }}
 
-    /* Tarjeta Blanca Sólida */
+    /* Tarjeta Principal */
     [data-testid="block-container"] {{
         background-color: #ffffff !important;
         padding: 25px !important;
@@ -170,7 +174,7 @@ st.markdown(f"""
         border: 3px solid #ff4d6d !important;
     }}
 
-    /* Textos en negro puro */
+    /* Forzar texto negro */
     [data-testid="block-container"] p, 
     [data-testid="block-container"] label, 
     [data-testid="block-container"] span, 
@@ -180,7 +184,7 @@ st.markdown(f"""
         font-weight: 600 !important;
     }}
 
-    /* Títulos principales */
+    /* Títulos */
     [data-testid="block-container"] h1, 
     [data-testid="block-container"] h2, 
     [data-testid="block-container"] h3 {{
@@ -189,7 +193,23 @@ st.markdown(f"""
         font-weight: 800 !important;
     }}
 
-    /* Banner romántico */
+    /* Animación Corazón Latiendo */
+    @keyframes latido {{
+        0% {{ transform: scale(1); }}
+        14% {{ transform: scale(1.2); }}
+        28% {{ transform: scale(1); }}
+        42% {{ transform: scale(1.2); }}
+        70% {{ transform: scale(1); }}
+    }}
+    .corazon-animado {{
+        font-size: 75px !important;
+        text-align: center;
+        margin: 15px 0;
+        animation: latido 1.4s infinite;
+        display: block;
+    }}
+
+    /* Banner Frase Especial */
     .frase-especial {{
         color: #590d22 !important;
         font-size: 1.1rem !important;
@@ -202,7 +222,21 @@ st.markdown(f"""
         margin: 15px 0 !important;
     }}
 
-    /* Inputs de escribir */
+    /* Cuadro WhatsApp Status */
+    .whatsapp-status-box {{
+        background-color: #f0f2f5;
+        border: 2px solid #25D366;
+        border-radius: 15px;
+        padding: 12px;
+        margin-bottom: 20px;
+    }}
+    .status-item {{
+        font-size: 0.95rem;
+        font-weight: 700;
+        margin: 4px 0;
+    }}
+
+    /* Inputs */
     .stTextInput input, .stTextArea textarea {{
         color: #000000 !important;
         background-color: #f1f3f5 !important;
@@ -234,180 +268,293 @@ st.markdown(f"""
         background-color: #ff4d6d !important;
         color: #ffffff !important;
     }}
+    
+    .timestamp-tag {{
+        font-size: 0.8rem !important;
+        color: #6c757d !important;
+        font-style: italic;
+    }}
     </style>
 """, unsafe_allow_html=True)
 
-if not GITHUB_TOKEN:
-    st.error("⚠️ Atención: No se detectó 'GITHUB_TOKEN' en Streamlit Cloud Secrets. La app estará en modo lectura.")
+# -------------------------------------------------------------
+# 📖 PANTALLA DE ENTRADA / PORTADA DEL LIBRO DE NUESTRA HISTORIA
+# -------------------------------------------------------------
+if st.session_state.usuario_activo is None:
+    st.markdown("<h1 style='text-align: center;'>📖 Nuestro Libro de la Historia 💖</h1>", unsafe_allow_html=True)
+    st.markdown("<div class='corazon-animado'>💖</div>", unsafe_allow_html=True)
+    st.markdown("<p style='text-align: center; font-size: 1.1rem;'>Para abrir el libro y ver nuestro espacio, selecciona tu nombre:</p>", unsafe_allow_html=True)
+    st.write("")
 
-st.title("💖 Nuestro Espacio Especial 💖")
-st.write("<h3 style='text-align: center;'>Dedicado a Yesenia Alejandra 💕</h3>", unsafe_allow_html=True)
-
-st.markdown("""
-    <div class='frase-especial'>
-        ✨ "Me gustaría ponerme al día con todos nuestros próximos planes, Yesenia Alejandra." ✨
-    </div>
-""", unsafe_allow_html=True)
-
-usuario = st.selectbox("👤 ¿Quién está interactuando ahora?", ["Yesenia Alejandra 💕", "Edward ❤️"])
-
-tab1, tab2, tab3 = st.tabs(["📌 Nuestros Planes", "📝 Encuesta Semanal", "📸 Recuerdos"])
-
-# TAB 1: PLANES
-with tab1:
-    st.subheader("📌 Lista de Nuestros Próximos Planes")
-    
-    cambio_planes = False
-    for idx, item in enumerate(st.session_state.app_data["planes"]):
-        estado = st.checkbox(item["plan"], value=item["hecho"], key=f"plan_{idx}")
-        if estado != item["hecho"]:
-            st.session_state.app_data["planes"][idx]["hecho"] = estado
-            cambio_planes = True
-            
-    if cambio_planes:
-        ok, msg = save_github_file(DATA_FILE, st.session_state.app_data, "Update planes status")
-        if ok:
-            st.toast("¡Estado de plan actualizado! 💖")
+    col_a, col_b = st.columns(2)
+    with col_a:
+        if st.button("👸 Soy Yesenia 💕", key="btn_login_yesenia"):
+            st.session_state.usuario_activo = "Yesenia Alejandra 💕"
+            st.balloons()
             st.rerun()
-        else:
-            st.error(f"Error al guardar cambio: {msg}")
 
-    st.divider()
-    nuevo_plan = st.text_input("➕ Agregar nuevo plan a la lista:")
-    if st.button("Guardar Plan 📝"):
-        if nuevo_plan.strip():
-            st.session_state.app_data["planes"].append({"plan": nuevo_plan.strip(), "hecho": False})
-            ok, msg = save_github_file(DATA_FILE, st.session_state.app_data, "Add new plan")
-            if ok:
-                st.success("¡Plan agregado exitosamente!")
-                st.rerun()
+    with col_b:
+        if st.button("🤴 Soy Edward ❤️", key="btn_login_edward"):
+            st.session_state.usuario_activo = "Edward ❤️"
+            st.balloons()
+            st.rerun()
+
+# -------------------------------------------------------------
+# 💖 APLICACIÓN PRINCIPAL (UNA VEZ ABIERTO EL LIBRO)
+# -------------------------------------------------------------
+else:
+    usuario = st.session_state.usuario_activo
+
+    # Barra Superior de Bienvenida y Cambiar Usuario
+    c1, c2 = st.columns([0.65, 0.35])
+    with c1:
+        st.markdown(f"<b>Hola, {usuario}</b>", unsafe_allow_html=True)
+    with c2:
+        if st.button("🔄 Cerrar Libro", key="btn_logout"):
+            st.session_state.usuario_activo = None
+            st.rerun()
+
+    st.title("💖 Nuestro Espacio Especial 💖")
+    st.write("<h3 style='text-align: center;'>Dedicado a Yesenia Alejandra 💕</h3>", unsafe_allow_html=True)
+
+    st.markdown("""
+        <div class='frase-especial'>
+            ✨ "Me gustaría ponerme al día con todos nuestros próximos planes, Yesenia Alejandra." ✨
+        </div>
+    """, unsafe_allow_html=True)
+
+    # Actualizar estado "En Línea"
+    ahora_str = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    st.session_state.app_data["status"][usuario] = ahora_str
+
+    if GITHUB_TOKEN:
+        save_github_file(DATA_FILE, st.session_state.app_data, f"Status update {usuario}")
+
+    def obtener_badge_estado(nombre_user):
+        last_str = st.session_state.app_data["status"].get(nombre_user, "")
+        if not last_str:
+            return "⚪ Desconectado/a"
+        try:
+            dt = datetime.strptime(last_str, "%Y-%m-%d %H:%M:%S")
+            diferencia = (datetime.now() - dt).total_seconds()
+            if diferencia < 180:
+                return "🟢 En línea"
             else:
-                st.error(f"Error al guardar plan: {msg}")
-        else:
-            st.warning("Escribe una propuesta de plan antes de guardar.")
+                return f"⚪ Última vez: {dt.strftime('%d/%m/%Y %I:%M %p')}"
+        except:
+            return "⚪ Desconectado/a"
 
-# TAB 2: ENCUESTA
-with tab2:
-    st.subheader("📝 Encuesta e Interacción Semanal")
-    
-    with st.expander("➕ Responder la encuesta de esta semana", expanded=True):
-        p1 = st.text_area("1. ¿Cuál fue tu momento favorito de esta semana juntos?")
-        p2 = st.text_input("2. ¿Qué se te antoja comer o hacer este fin de semana?")
-        p3 = st.select_slider("3. ¿Qué tan consentido/a te has sentido?", options=["Poco 🥺", "Normal 😊", "Muy Consentido/a 🥰", "Nivel Reina/Rey 👑"])
-        p4 = st.text_area("4. Un mensajito o nota secreta ❤️")
-        
-        if st.button("Enviar Respuestas 💌"):
-            if p1.strip() or p2.strip() or p4.strip():
-                nueva_resp = {
-                    "id": len(st.session_state.app_data["encuestas"]) + 1,
-                    "autor": usuario,
-                    "fecha": datetime.now().strftime("%Y-%m-%d %H:%M"),
-                    "p1": p1, "p2": p2, "p3": p3, "p4": p4,
-                    "comentarios": []
-                }
-                st.session_state.app_data["encuestas"].insert(0, nueva_resp)
-                ok, msg = save_github_file(DATA_FILE, st.session_state.app_data, "New survey response")
-                if ok:
-                    st.success("¡Respuesta registrada exitosamente!")
-                    st.balloons()
-                    st.rerun()
-                else:
-                    st.error(f"Error al guardar encuesta: {msg}")
-            else:
-                st.warning("Responde al menos uno de los campos antes de enviar.")
+    status_yesenia = obtener_badge_estado("Yesenia Alejandra 💕")
+    status_edward = obtener_badge_estado("Edward ❤️")
 
-    st.divider()
-    st.subheader("💬 Respuestas y Comentarios Mutuos")
-    
-    if not st.session_state.app_data["encuestas"]:
-        st.info("Aún no hay respuestas registradas. ¡Sé el primero en responder arriba!")
-    else:
-        for enc in st.session_state.app_data["encuestas"]:
-            st.markdown(f"### 💌 Encuesta de {enc['autor']} ({enc['fecha']})")
-            st.write(f"**1. Momento favorito:** {enc['p1']}")
-            st.write(f"**2. Antojo/Plan:** {enc['p2']}")
-            st.write(f"**3. Consentimiento:** {enc['p3']}")
-            st.write(f"**4. Mensaje secreto:** {enc['p4']}")
-            
-            if enc["comentarios"]:
-                st.write("**Comentarios:**")
-                for c in enc["comentarios"]:
-                    st.write(f"- *{c['autor']}*: {c['texto']}")
-            
-            nuevo_comentario = st.text_input(f"Comentar en la respuesta de {enc['autor']}:", key=f"comm_in_{enc['id']}")
-            if st.button("Comentar 💬", key=f"comm_btn_{enc['id']}"):
-                if nuevo_comentario.strip():
-                    enc["comentarios"].append({"autor": usuario, "texto": nuevo_comentario.strip()})
-                    ok, msg = save_github_file(DATA_FILE, st.session_state.app_data, "Add comment")
-                    if ok:
-                        st.success("Comentario publicado.")
-                        st.rerun()
-                    else:
-                        st.error(f"Error al publicar comentario: {msg}")
-            st.divider()
+    # Recuadro de Estados WhatsApp
+    st.markdown(f"""
+        <div class='whatsapp-status-box'>
+            <div class='status-item'>👸 <b>Yesenia Alejandra:</b> {status_yesenia}</div>
+            <div class='status-item'>🤴 <b>Edward:</b> {status_edward}</div>
+        </div>
+    """, unsafe_allow_html=True)
 
-# TAB 3: RECUERDOS
-with tab3:
-    st.subheader("📸 Galería de Recuerdos")
-    
-    # Verificación de Modo Administrador para Edward
+    # Panel de Administrador Global para Edward
     es_admin = False
     if usuario == "Edward ❤️":
         with st.expander("🛠️ Panel Administrador (Edward)"):
-            clave_input = st.text_input("Clave de Desarrollador/Administrador:", type="password", key="pwd_admin")
+            clave_input = st.text_input("Clave de Administrador:", type="password", key="pwd_admin_global")
             if clave_input == CLAVE_ADMIN_EDWARD:
                 es_admin = True
-                st.success("🔓 Modo Administrador Activo: Tienes permisos para eliminar fotos.")
+                st.success("🔓 Permisos de Administrador Activos: Puedes eliminar elementos en todas las secciones.")
             elif clave_input:
                 st.error("❌ Clave incorrecta.")
 
-    st.divider()
-    
-    foto_archivo = st.file_uploader("Selecciona una foto 📲", type=["jpg", "png", "jpeg"])
-    descripcion_foto = st.text_input("Pie de foto o recuerdo:")
-    
-    if st.button("Guardar en la Galería 🖼️"):
-        if foto_archivo is not None:
-            bytes_data = foto_archivo.getvalue()
-            nombre_foto = f"{datetime.now().strftime('%Y%m%d_%H%M%S')}_{foto_archivo.name}"
+    tab1, tab2, tab3 = st.tabs(["📌 Nuestros Planes", "📝 Encuesta Semanal", "📸 Recuerdos"])
+
+    # TAB 1: PLANES
+    with tab1:
+        st.subheader("📌 Lista de Nuestros Próximos Planes")
+        
+        cambio_planes = False
+        idx_a_borrar_plan = None
+        
+        for idx, item in enumerate(st.session_state.app_data["planes"]):
+            fecha_text = item.get("fecha", "Hace tiempo")
+            autor_text = item.get("autor", "")
             
-            with st.spinner("Guardando foto en la galería..."):
-                url_guardada, msg_img = save_github_image(nombre_foto, bytes_data)
-                
-            if url_guardada:
-                nueva_foto = {"url": url_guardada, "caption": descripcion_foto, "autor": usuario}
-                st.session_state.app_data["fotos"].insert(0, nueva_foto)
-                ok_json, msg_json = save_github_file(DATA_FILE, st.session_state.app_data, "Add new photo")
-                if ok_json:
-                    st.success("¡Foto guardada en la galería compartida!")
+            col1, col2 = st.columns([0.8, 0.2])
+            with col1:
+                estado = st.checkbox(f"{item['plan']}", value=item["hecho"], key=f"plan_{idx}")
+                st.markdown(f"<span class='timestamp-tag'>📅 Agregado: {fecha_text} {f'por {autor_text}' if autor_text else ''}</span>", unsafe_allow_html=True)
+                if estado != item["hecho"]:
+                    st.session_state.app_data["planes"][idx]["hecho"] = estado
+                    cambio_planes = True
+            with col2:
+                if es_admin:
+                    if st.button("🗑️", key=f"del_plan_{idx}"):
+                        idx_a_borrar_plan = idx
+                        
+        if idx_a_borrar_plan is not None:
+            st.session_state.app_data["planes"].pop(idx_a_borrar_plan)
+            save_github_file(DATA_FILE, st.session_state.app_data, "Delete plan item")
+            st.success("Plan eliminado.")
+            st.rerun()
+
+        if cambio_planes:
+            ok, msg = save_github_file(DATA_FILE, st.session_state.app_data, "Update planes status")
+            if ok:
+                st.toast("¡Plan actualizado! 💖")
+                st.rerun()
+
+        st.divider()
+        nuevo_plan = st.text_input("➕ Agregar nuevo plan a la lista:")
+        if st.button("Guardar Plan 📝"):
+            if nuevo_plan.strip():
+                fecha_actual = datetime.now().strftime("%d/%m/%Y %I:%M %p")
+                st.session_state.app_data["planes"].append({
+                    "plan": nuevo_plan.strip(),
+                    "hecho": False,
+                    "fecha": fecha_actual,
+                    "autor": usuario
+                })
+                ok, msg = save_github_file(DATA_FILE, st.session_state.app_data, "Add new plan")
+                if ok:
+                    st.success("¡Plan agregado exitosamente!")
                     st.rerun()
                 else:
-                    st.error(f"Error al actualizar la lista de fotos: {msg_json}")
+                    st.error(f"Error al guardar plan: {msg}")
             else:
-                st.error(f"Error al subir la imagen: {msg_img}")
-        else:
-            st.warning("Selecciona una foto de tu teléfono antes de hacer clic en guardar.")
+                st.warning("Escribe una propuesta antes de guardar.")
 
-    st.divider()
-    if not st.session_state.app_data["fotos"]:
-        st.info("Aún no hay fotos subidas en la galería.")
-    else:
-        for idx_foto, foto in enumerate(st.session_state.app_data["fotos"]):
-            st.image(foto["url"], caption=f"{foto['caption']} — Subido por {foto['autor']}", use_container_width=True)
+    # TAB 2: ENCUESTA
+    with tab2:
+        st.subheader("📝 Encuesta e Interacción Semanal")
+        
+        with st.expander("➕ Responder la encuesta de esta semana", expanded=True):
+            p1 = st.text_area("1. ¿Cuál fue tu momento favorito de esta semana juntos?")
+            p2 = st.text_input("2. ¿Qué se te antoja comer o hacer este fin de semana?")
+            p3 = st.select_slider("3. ¿Qué tan consentido/a te has sentido?", options=["Poco 🥺", "Normal 😊", "Muy Consentido/a 🥰", "Nivel Reina/Rey 👑"])
+            p4 = st.text_area("4. Un mensajito o nota secreta ❤️")
             
-            # Botón de Eliminación (Sólo visible para Edward con clave activa)
-            if es_admin:
-                if st.button(f"🗑️ Eliminar esta foto", key=f"del_photo_{idx_foto}"):
-                    with st.spinner("Eliminando foto..."):
-                        # 1. Eliminar archivo de GitHub
-                        delete_github_image_file(foto["url"])
-                        # 2. Eliminar de la lista de datos
-                        st.session_state.app_data["fotos"].pop(idx_foto)
-                        # 3. Guardar cambios
-                        ok, msg = save_github_file(DATA_FILE, st.session_state.app_data, "Delete photo")
+            if st.button("Enviar Respuestas 💌"):
+                if p1.strip() or p2.strip() or p4.strip():
+                    fecha_actual = datetime.now().strftime("%d/%m/%Y %I:%M %p")
+                    nueva_resp = {
+                        "id": len(st.session_state.app_data["encuestas"]) + 1,
+                        "autor": usuario,
+                        "fecha": fecha_actual,
+                        "p1": p1, "p2": p2, "p3": p3, "p4": p4,
+                        "comentarios": []
+                    }
+                    st.session_state.app_data["encuestas"].insert(0, nueva_resp)
+                    ok, msg = save_github_file(DATA_FILE, st.session_state.app_data, "New survey response")
+                    if ok:
+                        st.success("¡Respuesta registrada!")
+                        st.balloons()
+                        st.rerun()
+                    else:
+                        st.error(f"Error al guardar encuesta: {msg}")
+                else:
+                    st.warning("Responde al menos un campo antes de enviar.")
+
+        st.divider()
+        st.subheader("💬 Respuestas y Comentarios Mutuos")
+        
+        if not st.session_state.app_data["encuestas"]:
+            st.info("Aún no hay respuestas registradas. ¡Sé el primero en responder arriba!")
+        else:
+            idx_borrar_encuesta = None
+            for enc_idx, enc in enumerate(st.session_state.app_data["encuestas"]):
+                st.markdown(f"### 💌 Encuesta de {enc['autor']}")
+                st.markdown(f"<span class='timestamp-tag'>📅 Fecha: {enc.get('fecha', 'Reciente')}</span>", unsafe_allow_html=True)
+                st.write(f"**1. Momento favorito:** {enc['p1']}")
+                st.write(f"**2. Antojo/Plan:** {enc['p2']}")
+                st.write(f"**3. Consentimiento:** {enc['p3']}")
+                st.write(f"**4. Mensaje secreto:** {enc['p4']}")
+                
+                if es_admin:
+                    if st.button(f"🗑️ Eliminar Encuesta de {enc['autor']}", key=f"del_enc_{enc_idx}"):
+                        idx_borrar_encuesta = enc_idx
+
+                if enc["comentarios"]:
+                    st.write("**Comentarios:**")
+                    idx_borrar_comentario = None
+                    for c_idx, c in enumerate(enc["comentarios"]):
+                        f_com = c.get("fecha", "")
+                        st.write(f"- *{c['autor']}* ({f_com}): {c['texto']}")
+                        if es_admin:
+                            if st.button(f"🗑️ Eliminar Comentario #{c_idx+1}", key=f"del_comm_{enc_idx}_{c_idx}"):
+                                idx_borrar_comentario = c_idx
+                    
+                    if idx_borrar_comentario is not None:
+                        enc["comentarios"].pop(idx_borrar_comentario)
+                        save_github_file(DATA_FILE, st.session_state.app_data, "Delete comment")
+                        st.success("Comentario eliminado.")
+                        st.rerun()
+
+                nuevo_comentario = st.text_input(f"Comentar en la respuesta de {enc['autor']}:", key=f"comm_in_{enc['id']}")
+                if st.button("Comentar 💬", key=f"comm_btn_{enc['id']}"):
+                    if nuevo_comentario.strip():
+                        f_comentario = datetime.now().strftime("%d/%m/%Y %I:%M %p")
+                        enc["comentarios"].append({"autor": usuario, "texto": nuevo_comentario.strip(), "fecha": f_comentario})
+                        ok, msg = save_github_file(DATA_FILE, st.session_state.app_data, "Add comment")
                         if ok:
-                            st.success("Foto eliminada correctamente.")
+                            st.success("Comentario publicado.")
                             st.rerun()
                         else:
-                            st.error(f"Error al guardar cambios: {msg}")
-            st.divider()
+                            st.error(f"Error al publicar comentario: {msg}")
+                st.divider()
+
+            if idx_borrar_encuesta is not None:
+                st.session_state.app_data["encuestas"].pop(idx_borrar_encuesta)
+                save_github_file(DATA_FILE, st.session_state.app_data, "Delete survey response")
+                st.success("Encuesta eliminada.")
+                st.rerun()
+
+    # TAB 3: RECUERDOS
+    with tab3:
+        st.subheader("📸 Galería de Recuerdos")
+        
+        foto_archivo = st.file_uploader("Selecciona una foto 📲", type=["jpg", "png", "jpeg"])
+        descripcion_foto = st.text_input("Pie de foto o recuerdo:")
+        
+        if st.button("Guardar en la Galería 🖼️"):
+            if foto_archivo is not None:
+                bytes_data = foto_archivo.getvalue()
+                nombre_foto = f"{datetime.now().strftime('%Y%m%d_%H%M%S')}_{foto_archivo.name}"
+                
+                with st.spinner("Guardando foto en la galería..."):
+                    url_guardada, msg_img = save_github_image(nombre_foto, bytes_data)
+                    
+                if url_guardada:
+                    fecha_foto = datetime.now().strftime("%d/%m/%Y %I:%M %p")
+                    nueva_foto = {"url": url_guardada, "caption": descripcion_foto, "autor": usuario, "fecha": fecha_foto}
+                    st.session_state.app_data["fotos"].insert(0, nueva_foto)
+                    ok_json, msg_json = save_github_file(DATA_FILE, st.session_state.app_data, "Add new photo")
+                    if ok_json:
+                        st.success("¡Foto guardada en la galería compartida!")
+                        st.rerun()
+                    else:
+                        st.error(f"Error al actualizar la lista de fotos: {msg_json}")
+                else:
+                    st.error(f"Error al subir la imagen: {msg_img}")
+            else:
+                st.warning("Selecciona una foto antes de guardar.")
+
+        st.divider()
+        if not st.session_state.app_data["fotos"]:
+            st.info("Aún no hay fotos subidas en la galería.")
+        else:
+            for idx_foto, foto in enumerate(st.session_state.app_data["fotos"]):
+                f_foto = foto.get("fecha", "Reciente")
+                st.image(foto["url"], caption=f"{foto['caption']} — Subido por {foto['autor']} (📅 {f_foto})", use_container_width=True)
+                
+                if es_admin:
+                    if st.button(f"🗑️ Eliminar esta foto", key=f"del_photo_{idx_foto}"):
+                        with st.spinner("Eliminando foto..."):
+                            delete_github_image_file(foto["url"])
+                            st.session_state.app_data["fotos"].pop(idx_foto)
+                            ok, msg = save_github_file(DATA_FILE, st.session_state.app_data, "Delete photo")
+                            if ok:
+                                st.success("Foto eliminada correctamente.")
+                                st.rerun()
+                            else:
+                                st.error(f"Error al guardar cambios: {msg}")
+                st.divider()
